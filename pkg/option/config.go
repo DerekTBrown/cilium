@@ -1195,6 +1195,10 @@ const (
 
 	// PolicyCIDRMatchMode defines the entities that CIDR selectors can reach
 	PolicyCIDRMatchMode = "policy-cidr-match-mode"
+
+	// XdsServerPort is the default value for the XDS server port
+	// If set to 0, the XDS server will be exposed only on a local socket
+	XdsServerPort = "xds-server-port"
 )
 
 // Default string arguments
@@ -2416,6 +2420,10 @@ type DaemonConfig struct {
 
 	// ServiceNoBackendResponse determines how we handle traffic to a service with no backends.
 	ServiceNoBackendResponse string
+
+	// XdsServerPort is the port on which the xDS server listens.
+	// If set to 0, the xDS server will not be started.
+	XdsServerPort int
 }
 
 var (
@@ -3154,6 +3162,7 @@ func (c *DaemonConfig) Populate(vp *viper.Viper) {
 	c.EnablePMTUDiscovery = vp.GetBool(EnablePMTUDiscovery)
 	c.IPv6NAT46x64CIDR = defaults.IPv6NAT46x64CIDR
 	c.IPAMCiliumNodeUpdateRate = vp.GetDuration(IPAMCiliumNodeUpdateRate)
+	c.XdsServerPort = vp.GetInt(XdsServerPort)
 
 	c.ServiceNoBackendResponse = vp.GetString(ServiceNoBackendResponse)
 	switch c.ServiceNoBackendResponse {

@@ -210,14 +210,31 @@ func newXDSServer(envoySocketDir string, ipCache IPCacheEventSource, localEndpoi
 
 // start configures and starts the xDS GRPC server.
 func (s *xdsServer) start() error {
+
+	// Create a socket listener to expose the xDS server to Envoy
 	socketListener, err := s.newSocketListener()
 	if err != nil {
 		return fmt.Errorf("failed to create socket listener: %w", err)
 	}
 
-	resourceConfig := s.initializeXdsConfigs()
+	listeners := []net.Listener{
+		socketListener,
+	}
 
-	s.stopFunc = startXDSGRPCServer(socketListener, resourceConfig)
+	// If enabled, expose the xDS server via a TCP listener.
+	if option.Config.XdsServerPort != 0 {
+		// Create a new TCP listener to expose the xDS server to Envoy
+		tcpListener, err := net.Listen("tcp", fmt.Sprintf(":%d", option.Config.XdsServerPort))
+		if err != nil {
+			log.WithError(err).Warningf("Envoy: XDS server failed to listen on %s", s.socketPath)
+		} else {
+			listeners = append(listeners, tcpListener)
+		}
+	}
+
+	// Initialize and start the xDS gRPC server
+	resourceConfig := s.initializeXdsConfigs()
+	s.stopFunc = startXDSGRPCServer(listeners, resourceConfig)
 
 	return nil
 }

@@ -1119,6 +1119,9 @@ func InitGlobalFlags(cmd *cobra.Command, vp *viper.Viper) {
 	flags.MarkHidden(option.MaxInternalTimerDelay)
 	option.BindEnv(vp, option.MaxInternalTimerDelay)
 
+	flags.Int(option.XdsServerPort, defaults.XdsServerPort, "Port on which the xDS server listens for Envoy connections")
+	option.BindEnv(vp, option.XdsServerPort)
+
 	if err := vp.BindPFlags(flags); err != nil {
 		log.Fatalf("BindPFlags failed: %s", err)
 	}

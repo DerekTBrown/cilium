@@ -31,7 +31,7 @@ var (
 // startXDSGRPCServer starts a gRPC server to serve xDS APIs using the given
 // resource watcher and network listener.
 // Returns a function that stops the GRPC server when called.
-func startXDSGRPCServer(listener net.Listener, config map[string]*xds.ResourceTypeConfiguration) context.CancelFunc {
+func startXDSGRPCServer(listeners []net.Listener, config map[string]*xds.ResourceTypeConfiguration) context.CancelFunc {
 	grpcServer := grpc.NewServer()
 
 	xdsServer := xds.NewServer(config)
@@ -50,12 +50,15 @@ func startXDSGRPCServer(listener net.Listener, config map[string]*xds.ResourceTy
 
 	reflection.Register(grpcServer)
 
-	go func() {
-		log.Infof("Envoy: Starting xDS gRPC server listening on %s", listener.Addr())
-		if err := grpcServer.Serve(listener); err != nil && !errors.Is(err, net.ErrClosed) {
-			log.WithError(err).Fatal("Envoy: Failed to serve xDS gRPC API")
-		}
-	}()
+	for _, l := range listeners {
+		listener := l
+		go func() {
+			log.Infof("Envoy: Starting xDS gRPC server listening on %s", listener.Addr())
+			if err := grpcServer.Serve(listener); err != nil && !errors.Is(err, net.ErrClosed) {
+				log.WithError(err).Fatal("Envoy: Failed to serve xDS gRPC API")
+			}
+		}()
+	}
 
 	return grpcServer.Stop
 }
